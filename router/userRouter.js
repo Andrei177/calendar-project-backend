@@ -7,5 +7,6 @@ const userRouter = new Router();
 userRouter.post("/create", UserController.createUser);
 userRouter.post("/login", UserController.loginUser);
 userRouter.get("/all", validateToken, UserController.getAllUsers);
+userRouter.post("/recovery", UserController.recoveryPassword);
 
 module.exports = userRouter
