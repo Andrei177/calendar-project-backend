@@ -71,7 +71,7 @@ class UserController{
             secure: true,
             auth: {
                 user: 'andryusha_lyapin04@mail.ru',
-                pass: 'hTTjfeFxz3E34rdtdXyV'
+                pass: process.env.PASSWORD_FOR_SEND_LETTER
             }
         });
         const mailOptions = {
