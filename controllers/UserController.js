@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const { User } = require("../models");
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require("nodemailer");
+const { Sequelize } = require("../db");
 
 const generateJWT = (id, email) => {
     return jwt.sign({id, email}, process.env.SECRET_KEY, {expiresIn: "24h"});
@@ -14,43 +15,47 @@ class UserController{
 
         const candidate = await User.findOne({where: {email}});
         if(candidate){
-            return res.json({message: "Пользователь с таким email уже существует!"});
+            return res.status(405).json({message: "Пользователь с таким email уже существует!"});
         }
 
         const hashPassword = await bcrypt.hash(password, 5);
         const newUser = await User.create({email, password: hashPassword});
         const token = generateJWT(newUser.id, newUser.email);
 
-        res.json({token});
+        res.status(200).json({token});
     }
 
     static async loginUser(req, res){
         const {email, password} = req.body;
 
-        const user = await User.findOne({where: {email}})
+        const user = await User.findOne({where: {email}});
 
         if(!user){
-            return res.json({message: "Пользователя с таким email не найден"});
+            return res.status(404).json({message: "Пользователя с таким email не найден"});
         }
 
         const compare = await bcrypt.compare(password, user.password);
         if(!compare){
-            return res.json("Неверный пароль");
+            return res.status(403).json({message: "Неверный пароль"});
         }
 
         const token = generateJWT(user.id, user.email);
 
-        res.json({token});
+        res.status(200).json({token});
     }
 
     static async getAllUsers(req, res){
         const {id} = req.user;
 
-        const users = await User.findAll();
+        const users = await User.findAll({
+            where: {
+                id:{
+                    [Sequelize.Op.not]: id
+                }
+            }
+        });
 
-        users.splice(id - 1, 1);
-
-        res.json({users});
+        res.status(200).json({users});
     }
     static async recoveryPassword(req, res){
 
@@ -59,7 +64,7 @@ class UserController{
         const candidate = await User.findOne({where: {email}});
 
         if(!candidate){
-            return res.json({message: "Вы не зарегистрированы!"})
+            return res.status(403).json({message: "Вы не зарегистрированы!"})
         }
 
         const newPassword = uuidv4();
@@ -94,8 +99,8 @@ class UserController{
                     message: "Письмо успешно отправлено! Ваш пароль изменён на тот, что в письме",
                 });
                 }else{
-                    res.json({
-                        message: "Пароль выслан, но в системе произошла ошибка при изменении пароля на новый",
+                    res.status(500).json({
+                        message: "Пароль выслан, но в системе произошла ошибка при изменении пароля на новый, просим обновить страницу и попробовать ещё раз запросить новый пароль",
                     });
                 }
             }
