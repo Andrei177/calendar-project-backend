@@ -11,11 +11,18 @@ class CalendarController{
             return res.status(500).json({message: "Произошла ошибка при создании мероприятия"});
         }
 
-        const recordUserEvent = [];
-        recordUserEvent.length = invitedUsers.length;
+        // const recordUserEvent = [];
+        // recordUserEvent.length = invitedUsers.length;
 
-        for (let i = 0; i < recordUserEvent.length; i++) {
-            recordUserEvent[i] = {userId: invitedUsers[i].id, eventId: createdEvent.id}
+        // for (let i = 0; i < recordUserEvent.length; i++) {
+        //     recordUserEvent[i] = {userId: invitedUsers[i].id, eventId: createdEvent.id}
+        // }
+        //Вот этот код написать вместо кусочка, который выше (чтобы добавить ещё запись userID: {author_id, eventId: createdEvent.id})
+        const recordUserEvent = [];
+        recordUserEvent.push({userId: author_id, eventId: createdEvent.id})
+
+        for (let i = 0; i < invitedUsers.length; i++) {
+            recordUserEvent.push({userId: invitedUsers[i].id, eventId: createdEvent.id});
         }
 
         const newRecordUserEvent = await UserEvent.bulkCreate(recordUserEvent);
@@ -55,6 +62,25 @@ class CalendarController{
         )
 
         res.json({events});
+    }
+    static async getUsersByEvent(req, res){
+        const {eventsIds} = req.body;
+        console.log(eventsIds, "dsfsfdsfsgsaAAAAAAAAa");
+
+        const usersByEvent = await UserEvent.findAll({
+            where: {
+                eventId:{
+                    [Op.in]: eventsIds
+                }
+            }
+        }
+    )
+
+        if(!usersByEvent){
+            return res.status(404).json({message: "Не удалось найти пользователей, приглашённых на это мероприятие"});
+        }
+
+        return res.json(usersByEvent);
     }
 }
 
